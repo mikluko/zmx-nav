@@ -22,8 +22,8 @@ const (
 
 var modes = []string{modeFlat, modeDir, modeRepo}
 
-func validMode(mode string) bool {
-	for _, m := range modes {
+func validMode(mode string, list []string) bool {
+	for _, m := range list {
 		if m == mode {
 			return true
 		}
@@ -37,24 +37,25 @@ func validMode(mode string) bool {
 // grouping lives and promptMode is how tab reads it back.
 func prompt(mode string) string { return "zmx(" + mode + ")> " }
 
-// promptMode returns the grouping a prompt names, or the first grouping when
+// promptMode returns the grouping a prompt names, or the first of list when
 // the prompt is not one of ours.
-func promptMode(s string) string {
+func promptMode(s string, list []string) string {
 	_, rest, ok := strings.Cut(s, "(")
 	if !ok {
-		return modes[0]
+		return list[0]
 	}
 	mode, _, ok := strings.Cut(rest, ")")
-	if !ok || !validMode(mode) {
-		return modes[0]
+	if !ok || !validMode(mode, list) {
+		return list[0]
 	}
 	return mode
 }
 
-// cycleMode returns the grouping one step from current, wrapping at both ends.
-func cycleMode(current string, forward bool) string {
+// cycleMode returns the grouping one step from current in list, wrapping at
+// both ends.
+func cycleMode(current string, forward bool, list []string) string {
 	i := 0
-	for j, m := range modes {
+	for j, m := range list {
 		if m == current {
 			i = j
 			break
@@ -62,9 +63,9 @@ func cycleMode(current string, forward bool) string {
 	}
 	step := 1
 	if !forward {
-		step = len(modes) - 1
+		step = len(list) - 1
 	}
-	return modes[(i+step)%len(modes)]
+	return list[(i+step)%len(list)]
 }
 
 // renderPick returns one `name\tdisplay` line per session, ordered for mode.
@@ -173,18 +174,18 @@ func quote(s string) string {
 	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
 }
 
-// runCycle prints the actions that move the picker one grouping along.
+// runCycle prints the actions that move command's picker one grouping along.
 //
 // A binding is fixed for the life of the picker, so tab cannot name the
 // grouping it moves to. It asks here instead, and the grouping it moves from
 // comes back out of $FZF_PROMPT.
-func runCycle(forward bool) error {
+func runCycle(forward bool, command string, list []string) error {
 	self, err := os.Executable()
 	if err != nil {
 		self = "zmx-nav"
 	}
-	next := cycleMode(promptMode(os.Getenv("FZF_PROMPT")), forward)
-	fmt.Printf("change-prompt(%s)+reload(%s pick --render %s)", prompt(next), quote(self), next)
+	next := cycleMode(promptMode(os.Getenv("FZF_PROMPT"), list), forward, list)
+	fmt.Printf("change-prompt(%s)+reload(%s %s --render %s)", prompt(next), quote(self), command, next)
 	return nil
 }
 

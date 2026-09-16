@@ -10,6 +10,7 @@ fills that gap and nothing else.
 ```sh
 zmx-nav pick    # attach to a running session
 zmx-nav new     # start one in a repository or worktree
+zmx-nav switch  # hold this pane over one session after another
 ```
 
 Both present [fzf](https://github.com/junegunn/fzf) and `exec` into
@@ -59,6 +60,10 @@ prints the actions that reload the next.
 
 The preview is `zmx history`, so a session shows its own scrollback.
 
+Run from a prompt inside a session, this moves the pane rather than nesting a
+client: zmx reads an attach made with `ZMX_SESSION` set as that session
+switching, and leaves the session behind it running with no clients.
+
 ## new
 
 Every repository two levels below the root, and every worktree git records for
@@ -80,6 +85,39 @@ after it, so `zmx attach org/repo` creates nothing and says nothing.**
 
 A name already running is attached rather than created, so `new` doubles as a
 jump to a repository whose session is up.
+
+## switch
+
+`pick` and `new` hand the terminal over and are done. `switch` keeps the pane:
+it attaches, and offers the picker again once that client is gone.
+
+```sh
+zmx-nav switch
+```
+
+The key is zmx's own. **ctrl+\\** detaches the current client, and the client
+takes that byte before the PTY sees it, so the switch is reachable from inside
+whatever the session is running — an editor, a build, a full-screen agent —
+where a shell binding is not. Esc in the picker ends the switcher, and with it
+the pane: what a pane holds here is a viewport, and every session it showed
+outlives it.
+
+Tab cycles a fourth grouping, the repositories from `new`, so a pane can reach
+a session that does not exist yet. A grouping holding nothing gives way to it,
+which is what the first pane of the day sees.
+
+As a terminal's command this makes every pane a slot:
+
+```
+# Ghostty
+command = /bin/zsh -lc "exec zmx-nav switch"
+keybind = cmd+alt+s=text:\x1c
+```
+
+The keybind is optional and sends nothing but the detach byte, so the switch
+can be a cmd chord instead of ctrl+\\. The login shell is what puts `zmx` and
+`fzf` on `PATH`: Ghostty runs `command` through `/bin/sh -c`, which inherits
+the GUI session's `PATH` rather than a shell's.
 
 ## Configuration
 

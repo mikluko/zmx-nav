@@ -207,28 +207,40 @@ func TestAlignPadsToTheWidestCell(t *testing.T) {
 }
 
 func TestCycleModeWrapsInBothDirections(t *testing.T) {
-	mode := modes[0]
-	for range modes {
-		mode = cycleMode(mode, true)
-	}
-	if mode != modes[0] {
-		t.Errorf("forward through every grouping landed on %q, want %q", mode, modes[0])
-	}
-	for _, m := range modes {
-		if back := cycleMode(cycleMode(m, true), false); back != m {
-			t.Errorf("%q forward then back landed on %q", m, back)
+	for _, list := range [][]string{modes, switchModes} {
+		mode := list[0]
+		for range list {
+			mode = cycleMode(mode, true, list)
+		}
+		if mode != list[0] {
+			t.Errorf("forward through every grouping landed on %q, want %q", mode, list[0])
+		}
+		for _, m := range list {
+			if back := cycleMode(cycleMode(m, true, list), false, list); back != m {
+				t.Errorf("%q forward then back landed on %q", m, back)
+			}
 		}
 	}
 }
 
 // tab reads the grouping back out of the prompt, so the two must agree.
 func TestPromptModeReadsBackPrompt(t *testing.T) {
-	for _, m := range modes {
-		if got := promptMode(prompt(m)); got != m {
-			t.Errorf("prompt %q read back as %q", prompt(m), got)
+	for _, list := range [][]string{modes, switchModes} {
+		for _, m := range list {
+			if got := promptMode(prompt(m), list); got != m {
+				t.Errorf("prompt %q read back as %q", prompt(m), got)
+			}
+		}
+		if got := promptMode("> ", list); got != list[0] {
+			t.Errorf("a foreign prompt read back as %q, want %q", got, list[0])
 		}
 	}
-	if got := promptMode("> "); got != modes[0] {
-		t.Errorf("a foreign prompt read back as %q, want %q", got, modes[0])
+}
+
+// A grouping pick cannot render must not come back out of a prompt it reads,
+// which is what would happen if the two shared one list.
+func TestPromptModeKeepsTheListsApart(t *testing.T) {
+	if got := promptMode(prompt(modeNew), modes); got != modes[0] {
+		t.Errorf("pick read %q back as %q, want %q", prompt(modeNew), got, modes[0])
 	}
 }
