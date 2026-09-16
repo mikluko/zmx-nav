@@ -31,6 +31,42 @@ func validMode(mode string) bool {
 	return false
 }
 
+// prompt renders the picker's prompt for mode.
+//
+// fzf keeps no state a binding can read, so the prompt is where the current
+// grouping lives and promptMode is how tab reads it back.
+func prompt(mode string) string { return "zmx(" + mode + ")> " }
+
+// promptMode returns the grouping a prompt names, or the first grouping when
+// the prompt is not one of ours.
+func promptMode(s string) string {
+	_, rest, ok := strings.Cut(s, "(")
+	if !ok {
+		return modes[0]
+	}
+	mode, _, ok := strings.Cut(rest, ")")
+	if !ok || !validMode(mode) {
+		return modes[0]
+	}
+	return mode
+}
+
+// cycleMode returns the grouping one step from current, wrapping at both ends.
+func cycleMode(current string, forward bool) string {
+	i := 0
+	for j, m := range modes {
+		if m == current {
+			i = j
+			break
+		}
+	}
+	step := 1
+	if !forward {
+		step = len(modes) - 1
+	}
+	return modes[(i+step)%len(modes)]
+}
+
 // renderPick returns one `name\tdisplay` line per session, ordered for mode.
 //
 // The name leads the line so `zmx history {1}` can preview it and the choice
@@ -132,6 +168,26 @@ func align(rows [][]string) []string {
 	return out
 }
 
+// quote wraps s so a shell reads it as one word, whatever it holds.
+func quote(s string) string {
+	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
+}
+
+// runCycle prints the actions that move the picker one grouping along.
+//
+// A binding is fixed for the life of the picker, so tab cannot name the
+// grouping it moves to. It asks here instead, and the grouping it moves from
+// comes back out of $FZF_PROMPT.
+func runCycle(forward bool) error {
+	self, err := os.Executable()
+	if err != nil {
+		self = "zmx-nav"
+	}
+	next := cycleMode(promptMode(os.Getenv("FZF_PROMPT")), forward)
+	fmt.Printf("change-prompt(%s)+reload(%s pick --render %s)", prompt(next), quote(self), next)
+	return nil
+}
+
 // runPick presents the session picker and attaches to the choice.
 func runPick(mode, root string, render bool) error {
 	found, err := sessions()
@@ -159,14 +215,12 @@ func runPick(mode, root string, render bool) error {
 		"--with-nth=2",
 		"--height=80%",
 		"--no-sort",
-		"--prompt=zmx(" + mode + ")> ",
-		"--header=enter attach | ctrl-f flat | ctrl-d dir | ctrl-r repo",
+		"--prompt=" + prompt(mode),
+		"--header=enter attach | tab/shift-tab grouping",
 		"--preview=zmx history {1}",
 		"--preview-window=right:60%:follow",
-	}
-	for key, name := range map[string]string{"ctrl-f": modeFlat, "ctrl-d": modeDir, "ctrl-r": modeRepo} {
-		args = append(args, "--bind",
-			fmt.Sprintf("%s:change-prompt(zmx(%s)> )+reload(%s pick --render %s)", key, name, self, name))
+		"--bind", "tab:transform:" + quote(self) + " pick --cycle next",
+		"--bind", "btab:transform:" + quote(self) + " pick --cycle prev",
 	}
 
 	chosen, err := runFzf(lines, args)

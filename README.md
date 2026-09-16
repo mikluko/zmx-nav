@@ -27,19 +27,20 @@ Or from source:
 go install github.com/mikluko/zmx-nav@latest
 ```
 
-Needs `zmx` and `fzf` on `PATH`. `zmx-nav new` previews with
+Needs `zmx` and `fzf` 0.46 or newer on `PATH`. `zmx-nav new` previews with
 [`lsd`](https://github.com/lsd-rs/lsd).
 
 ## pick
 
-Three groupings over the same sessions, swapped in place without leaving the
-picker:
+Three groupings over the same sessions, cycled in place with `tab` without
+leaving the picker. `shift-tab` goes back, and the prompt names the one in
+view:
 
-| Key | Grouping |
+| Grouping | |
 | --- | --- |
-| `ctrl-f` | flat, by session name |
-| `ctrl-d` | by working directory |
-| `ctrl-r` | by repository, worktrees under the repository they belong to |
+| flat | by session name |
+| dir | by working directory |
+| repo | by repository, worktrees under the repository they belong to |
 
 ```
 mikluko/dotfiles   .            mikluko.dotfiles            c:0
@@ -51,6 +52,10 @@ mikluko/slopguard  heldout      mikluko.slopguard@heldout   c:0
 The grouping is a leading column plus a sort, not a header row, because fzf
 has no unselectable line. Every line stays selectable, and the group stays
 matchable by typing it.
+
+A binding is fixed for the life of the picker, so `tab` cannot name the
+grouping it moves to. It reads the current one back out of the prompt and
+prints the actions that reload the next.
 
 The preview is `zmx history`, so a session shows its own scrollback.
 

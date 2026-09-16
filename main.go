@@ -27,7 +27,7 @@ Usage:
 Options:
   --root DIR    Where repositories live (default ~/Forge, or $ZMX_NAV_ROOT)
 
-In the picker: ctrl-f flat, ctrl-d by directory, ctrl-r by repository.
+In the picker: tab cycles the grouping, shift-tab goes back.
 `
 
 func main() {
@@ -52,9 +52,19 @@ func run(argv []string) error {
 		fs := flag.NewFlagSet("pick", flag.ContinueOnError)
 		mode := fs.String("mode", modeRepo, "grouping: flat, dir or repo")
 		render := fs.String("render", "", "print the lines for a grouping and exit; used by the picker's reload")
+		cycle := fs.String("cycle", "", "print the actions for the next or previous grouping; used by the picker's tab")
 		root := fs.String("root", defaultRoot(), "where repositories live")
 		if err := fs.Parse(rest); err != nil {
 			return err
+		}
+		switch *cycle {
+		case "":
+		case "next":
+			return runCycle(true)
+		case "prev":
+			return runCycle(false)
+		default:
+			return fmt.Errorf("unknown direction %q", *cycle)
 		}
 		if *render != "" {
 			if !validMode(*render) {
