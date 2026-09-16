@@ -224,7 +224,7 @@ func runPick(mode, root string, render bool) error {
 		"--bind", "btab:transform:" + quote(self) + " pick --cycle prev",
 	}
 
-	chosen, err := runFzf(lines, args)
+	_, chosen, err := choose(lines, args)
 	if err != nil {
 		return err
 	}

@@ -64,7 +64,7 @@ func runNew(root string) error {
 		running[s.Name] = true
 	}
 
-	chosen, err := runFzf(renderNew(found, running), []string{
+	_, chosen, err := choose(renderNew(found, running), []string{
 		"--delimiter=\t",
 		"--with-nth=3",
 		"--height=80%",

@@ -82,32 +82,11 @@ func run(argv []string) error {
 
 	case "switch":
 		fs := flag.NewFlagSet("switch", flag.ContinueOnError)
-		mode := fs.String("mode", modeRepo, "grouping: flat, dir, repo or new")
-		render := fs.String("render", "", "print the lines for a grouping and exit; used by the picker's reload")
-		cycle := fs.String("cycle", "", "print the actions for the next or previous grouping; used by the picker's tab")
 		root := fs.String("root", defaultRoot(), "where repositories live")
 		if err := fs.Parse(rest); err != nil {
 			return err
 		}
-		switch *cycle {
-		case "":
-		case "next":
-			return runCycle(true, "switch", switchModes)
-		case "prev":
-			return runCycle(false, "switch", switchModes)
-		default:
-			return fmt.Errorf("unknown direction %q", *cycle)
-		}
-		if *render != "" {
-			if !validMode(*render, switchModes) {
-				return fmt.Errorf("unknown grouping %q", *render)
-			}
-			return runSwitchRender(*render, *root)
-		}
-		if !validMode(*mode, switchModes) {
-			return fmt.Errorf("unknown grouping %q", *mode)
-		}
-		return runSwitch(*mode, *root)
+		return runSwitch(*root)
 
 	case "new":
 		fs := flag.NewFlagSet("new", flag.ContinueOnError)
