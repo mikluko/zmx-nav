@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  pull_request:
+  workflow_call:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      # go list -m all prints the main module first; anything after it is a
+      # dependency the module is not allowed to have.
+      - name: Module depends on nothing but the standard library
+        run: test -z "$(go list -m all | tail -n +2)"
+      - name: Formatted
+        run: test -z "$(gofmt -l .)"
+      - run: go vet ./...
+      - run: go test -race ./...
+
+  changelog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The reference tag is the newest one reachable from HEAD, so the
+          # full history and tags need to be here.
+          fetch-depth: 0
+      - uses: mikluko/action-changelog@v1
+        with:
+          changelog: CHANGELOG.md
