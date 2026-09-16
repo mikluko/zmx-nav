@@ -3,8 +3,7 @@
 // zmx persists terminal sessions and deliberately provides no windows, tabs
 // or splits. What it also provides no opinion about is which session you
 // want, which is the gap this fills: `pick` moves between running sessions,
-// `new` starts one in a repository or one of its worktrees, and `switch`
-// holds a pane open over one session after another.
+// `new` starts one in a repository or one of its worktrees.
 package main
 
 import (
@@ -23,14 +22,12 @@ const usage = `zmx-nav selects and starts zmx sessions.
 Usage:
   zmx-nav pick [--mode flat|dir|repo]   Attach to a running session
   zmx-nav new                           Start one in a repository or worktree
-  zmx-nav switch [--mode ...]           Hold this pane over one session at a time
   zmx-nav version                       Print the version
 
 Options:
   --root DIR    Where repositories live (default ~/Forge, or $ZMX_NAV_ROOT)
 
 In the picker: tab cycles the grouping, shift-tab goes back.
-In a session under switch: ctrl+\ detaches and brings the picker back.
 `
 
 func main() {
@@ -63,30 +60,22 @@ func run(argv []string) error {
 		switch *cycle {
 		case "":
 		case "next":
-			return runCycle(true, "pick", modes)
+			return runCycle(true)
 		case "prev":
-			return runCycle(false, "pick", modes)
+			return runCycle(false)
 		default:
 			return fmt.Errorf("unknown direction %q", *cycle)
 		}
 		if *render != "" {
-			if !validMode(*render, modes) {
+			if !validMode(*render) {
 				return fmt.Errorf("unknown grouping %q", *render)
 			}
 			return runPick(*render, *root, true)
 		}
-		if !validMode(*mode, modes) {
+		if !validMode(*mode) {
 			return fmt.Errorf("unknown grouping %q", *mode)
 		}
 		return runPick(*mode, *root, false)
-
-	case "switch":
-		fs := flag.NewFlagSet("switch", flag.ContinueOnError)
-		root := fs.String("root", defaultRoot(), "where repositories live")
-		if err := fs.Parse(rest); err != nil {
-			return err
-		}
-		return runSwitch(*root)
 
 	case "new":
 		fs := flag.NewFlagSet("new", flag.ContinueOnError)

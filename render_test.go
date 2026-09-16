@@ -209,13 +209,13 @@ func TestAlignPadsToTheWidestCell(t *testing.T) {
 func TestCycleModeWrapsInBothDirections(t *testing.T) {
 	mode := modes[0]
 	for range modes {
-		mode = cycleMode(mode, true, modes)
+		mode = cycleMode(mode, true)
 	}
 	if mode != modes[0] {
 		t.Errorf("forward through every grouping landed on %q, want %q", mode, modes[0])
 	}
 	for _, m := range modes {
-		if back := cycleMode(cycleMode(m, true, modes), false, modes); back != m {
+		if back := cycleMode(cycleMode(m, true), false); back != m {
 			t.Errorf("%q forward then back landed on %q", m, back)
 		}
 	}
@@ -224,11 +224,11 @@ func TestCycleModeWrapsInBothDirections(t *testing.T) {
 // tab reads the grouping back out of the prompt, so the two must agree.
 func TestPromptModeReadsBackPrompt(t *testing.T) {
 	for _, m := range modes {
-		if got := promptMode(prompt(m), modes); got != m {
+		if got := promptMode(prompt(m)); got != m {
 			t.Errorf("prompt %q read back as %q", prompt(m), got)
 		}
 	}
-	if got := promptMode("> ", modes); got != modes[0] {
+	if got := promptMode("> "); got != modes[0] {
 		t.Errorf("a foreign prompt read back as %q, want %q", got, modes[0])
 	}
 }
